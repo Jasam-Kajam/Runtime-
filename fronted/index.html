@@ -1,23 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Quicktel Top-Up</title>
+  <title>Quicktel Bundles</title>
   <script src="https://js.paystack.co/v1/inline.js"></script>
   <style>
-    .product-card { border: 1px solid #ccc; padding: 15px; margin: 10px; }
-    .btn { background: green; color: white; padding: 10px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .product-card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn {
+      background-color: green;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <h1>Available Bundles</h1>
-  <div id="product-container"></div>
+  <div id="product-container">Loading...</div>
 
   <script>
-    // Load products from backend
     fetch('/api/products')
       .then(res => res.json())
       .then(products => {
         const container = document.getElementById('product-container');
+        container.innerHTML = '';
+        if (!products || products.length === 0) {
+          container.innerHTML = '<p>No bundles available.</p>';
+          return;
+        }
         products.forEach(product => {
           const card = document.createElement('div');
           card.className = 'product-card';
@@ -28,28 +46,28 @@
           `;
           container.appendChild(card);
         });
+      })
+      .catch(err => {
+        document.getElementById('product-container').innerHTML = 'Error loading products.';
+        console.error('Fetch error:', err);
       });
 
-    // Paystack payment
     function payWithPaystack(productCode, productName, amount) {
-      let email = prompt("Enter your email:");
-      let phone = prompt("Enter your phone number:");
+      const email = prompt("Enter your email:");
+      const phone = prompt("Enter your phone number:");
 
       let handler = PaystackPop.setup({
-        key: 'pk_test_xxxxxxxx', // replace with your Paystack public key
+        key: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxx', // REPLACE with your real Paystack public key
         email: email,
         amount: amount * 100,
         currency: 'KES',
         metadata: {
-          custom_fields: [
-            { display_name: "Phone Number", variable_name: "phone", value: phone }
-          ]
+          custom_fields: [{ display_name: "Phone Number", variable_name: "phone", value: phone }]
         },
         callback: function(response) {
-          // Tell backend to verify payment and trigger purchase
           fetch('/api/verify-payment', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               reference: response.reference,
               productCode,
