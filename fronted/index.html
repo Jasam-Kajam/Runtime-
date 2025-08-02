@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quicktel Top-Up</title>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <style>
+    .product-card { border: 1px solid #ccc; padding: 15px; margin: 10px; }
+    .btn { background: green; color: white; padding: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Available Bundles</h1>
+  <div id="product-container"></div>
+
+  <script>
+    // Load products from backend
+    fetch('/api/products')
+      .then(res => res.json())
+      .then(products => {
+        const container = document.getElementById('product-container');
+        products.forEach(product => {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          card.innerHTML = `
+            <h3>${product.name}</h3>
+            <p>Price: KES ${product.amount}</p>
+            <button class="btn" onclick="payWithPaystack('${product.code}', '${product.name}', ${product.amount})">Buy Now</button>
+          `;
+          container.appendChild(card);
+        });
+      });
+
+    // Paystack payment
+    function payWithPaystack(productCode, productName, amount) {
+      let email = prompt("Enter your email:");
+      let phone = prompt("Enter your phone number:");
+
+      let handler = PaystackPop.setup({
+        key: 'pk_test_xxxxxxxx', // replace with your Paystack public key
+        email: email,
+        amount: amount * 100,
+        currency: 'KES',
+        metadata: {
+          custom_fields: [
+            { display_name: "Phone Number", variable_name: "phone", value: phone }
+          ]
+        },
+        callback: function(response) {
+          // Tell backend to verify payment and trigger purchase
+          fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              reference: response.reference,
+              productCode,
+              phone
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+            alert(data.message);
+          });
+        },
+        onClose: function() {
+          alert('Transaction was not completed.');
+        }
+      });
+      handler.openIframe();
+    }
+  </script>
+</body>
+</html>
