@@ -28,7 +28,7 @@ app.get("/api/products", async (req, res) => {
   try {
     const token = await getStatumToken();
 
-    const response = await axios.get("https://api.statum.co.ke/api/v2/products", {
+    const response = await axios.get("https://api.statum.co.ke/api/v2/airtime", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
