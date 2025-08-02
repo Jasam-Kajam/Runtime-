@@ -14,7 +14,7 @@
   <div id="products">Loading...</div>
 
   <script>
-    const PAYSTACK_KEY = 'YOUR_PAYSTACK_PUBLIC_KEY'; // Replace this
+    const PAYSTACK_KEY = 'pk_live_3b95d82d975d8cd88f2e0059b1d6dca62c1db036'; // Replace this
     async function loadProducts() {
       const res = await fetch('http://localhost:5000/api/products');
       const data = await res.json();
