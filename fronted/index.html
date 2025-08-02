@@ -1,90 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Quicktel Bundles</title>
-  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Statum Products</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .product-card {
-      border: 1px solid #ddd;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .btn {
-      background-color: green;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
+    body { font-family: sans-serif; padding: 20px; }
+    .product { border: 1px solid #ccc; padding: 10px; margin: 10px; }
   </style>
 </head>
 <body>
-  <h1>Available Bundles</h1>
-  <div id="product-container">Loading...</div>
+  <h1>Available Products</h1>
+  <div id="products">Loading...</div>
 
   <script>
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(products => {
-        const container = document.getElementById('product-container');
-        container.innerHTML = '';
-        if (!products || products.length === 0) {
-          container.innerHTML = '<p>No bundles available.</p>';
-          return;
-        }
-        products.forEach(product => {
-          const card = document.createElement('div');
-          card.className = 'product-card';
-          card.innerHTML = `
-            <h3>${product.name}</h3>
-            <p>Price: KES ${product.amount}</p>
-            <button class="btn" onclick="payWithPaystack('${product.code}', '${product.name}', ${product.amount})">Buy Now</button>
-          `;
-          container.appendChild(card);
-        });
-      })
-      .catch(err => {
-        document.getElementById('product-container').innerHTML = 'Error loading products.';
-        console.error('Fetch error:', err);
+    const PAYSTACK_KEY = 'YOUR_PAYSTACK_PUBLIC_KEY'; // Replace this
+    async function loadProducts() {
+      const res = await fetch('http://localhost:5000/api/products');
+      const data = await res.json();
+      const container = document.getElementById("products");
+      container.innerHTML = "";
+
+      data.products.forEach(prod => {
+        const div = document.createElement("div");
+        div.className = "product";
+        div.innerHTML = `
+          <h3>${prod.name}</h3>
+          <p>Price: KES ${prod.amount}</p>
+          <input type="text" placeholder="Enter phone number" id="phone-${prod.code}" />
+          <button onclick="payNow('${prod.code}', ${prod.amount})">Buy Now</button>
+        `;
+        container.appendChild(div);
       });
+    }
 
-    function payWithPaystack(productCode, productName, amount) {
-      const email = prompt("Enter your email:");
-      const phone = prompt("Enter your phone number:");
+    async function payNow(productCode, amount) {
+      const phone = document.getElementById(`phone-${productCode}`).value;
+      if (!phone) return alert("Enter phone number");
 
-      let handler = PaystackPop.setup({
-        key: 'pk_test_xxxxxxxxxxxxxxxxxxxxxxx', // REPLACE with your real Paystack public key
-        email: email,
-        amount: amount * 100,
-        currency: 'KES',
-        metadata: {
-          custom_fields: [{ display_name: "Phone Number", variable_name: "phone", value: phone }]
-        },
+      const handler = PaystackPop.setup({
+        key: PAYSTACK_KEY,
+        email: "buyer@example.com",
+        amount: amount * 100, // in kobo
+        currency: "KES",
         callback: function(response) {
-          fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              reference: response.reference,
-              productCode,
-              phone
-            })
-          })
-          .then(res => res.json())
-          .then(data => {
-            alert(data.message);
-          });
+          // Optionally, send to backend: response.reference, productCode, phone
+          alert("Payment successful: " + response.reference);
         },
         onClose: function() {
-          alert('Transaction was not completed.');
+          alert("Transaction cancelled");
         }
       });
       handler.openIframe();
     }
+
+    loadProducts();
   </script>
+  <script src="https://js.paystack.co/v1/inline.js"></script>
 </body>
 </html>
